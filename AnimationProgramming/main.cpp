@@ -14,19 +14,26 @@
 
 
 struct BoneTransform {
+    BoneTransform() : name(nullptr), pos(Vec3(0, 0, 0)), rot(Quaternion(0, 0, 0, 0)) {}
+    
     const char* name; 
-    float posX, posY, posZ;
-    float quatW, quatX, quatY, quatZ;
+    Vec3 pos; 
+    Quaternion rot; 
 };
 
-void CombineTransform(float parent_x, float parent_y, float parent_z, float& local_x, float& local_y, float& local_z) {
-    local_x += parent_x;
-    local_y += parent_y;
-    local_z += parent_z;
+void CombineTransform(const BoneTransform& parent, BoneTransform& children) {
+    Vec3 rotatedPos = parent.rot.multiplyVector(children.pos);
+
+    children.pos = parent.pos + rotatedPos;
+
+    children.rot = parent.rot * children.rot;
 }
+
 
 class CSimulation : public ISimulation
 {
+    int boneCount; 
+    std::vector<BoneTransform> globalTransforms; 
 
     virtual void Init() override {
         int spine01 = GetSkeletonBoneIndex("spine_01");
@@ -40,40 +47,37 @@ class CSimulation : public ISimulation
         printf("Spine parent bone : %s\n", spineParentName);
         printf("Anim key count : %ld\n", keyCount);
         printf("Anim key : pos(%.2f,%.2f,%.2f) rotation quat(%.10f,%.10f,%.10f,%.10f)\n", posX, posY, posZ, quatW, quatX, quatY, quatZ);
-    }
 
-    virtual void Update(float frameTime) override {
-        // X axis
-        DrawLine(0, 0, 0, 100, 0, 0, 1, 0, 0);
-        // Y axis
-        DrawLine(0, 0, 0, 0, 100, 0, 0, 1, 0);
-        // Z axis
-        DrawLine(0, 0, 0, 0, 0, 100, 0, 0, 1);
-
-        int boneCount = GetSkeletonBoneCount();
-        std::vector<BoneTransform> globalTransforms(boneCount);
-
+        boneCount = GetSkeletonBoneCount(); 
+        globalTransforms = std::vector<BoneTransform>(boneCount); 
+        
         for (int i = 0; i < boneCount; i++) {
             GetSkeletonBoneLocalBindTransform(i,
-                globalTransforms[i].posX, globalTransforms[i].posY, globalTransforms[i].posZ,
-                globalTransforms[i].quatW, globalTransforms[i].quatX, globalTransforms[i].quatY, globalTransforms[i].quatZ
+                globalTransforms[i].pos.x, globalTransforms[i].pos.y, globalTransforms[i].pos.z,
+                globalTransforms[i].rot.w, globalTransforms[i].rot.x, globalTransforms[i].rot.y, globalTransforms[i].rot.z
             );
 
             int parentIndex = GetSkeletonBoneParentIndex(i);
             if (parentIndex != -1) {
-                CombineTransform(
-                    globalTransforms[parentIndex].posX, globalTransforms[parentIndex].posY, globalTransforms[parentIndex].posZ,
-                    globalTransforms[i].posX, globalTransforms[i].posY, globalTransforms[i].posZ
-                );
+                CombineTransform(globalTransforms[parentIndex], globalTransforms[i]);
             }
         }
+    }
+
+    virtual void Update(float frameTime) override {
+        // X axis
+        //DrawLine(0, 0, 0, 100, 0, 0, 1, 0, 0);
+        // Y axis
+        //DrawLine(0, 0, 0, 0, 100, 0, 0, 1, 0);
+        // Z axis
+        //DrawLine(0, 0, 0, 0, 0, 100, 0, 0, 1);
 
         for (int i = 1; i < boneCount; i++) {
             int parentIndex = GetSkeletonBoneParentIndex(i);
             if (parentIndex != -1) {
                 DrawLine(
-                    globalTransforms[parentIndex].posX, globalTransforms[parentIndex].posY, globalTransforms[parentIndex].posZ,
-                    globalTransforms[i].posX, globalTransforms[i].posY, globalTransforms[i].posZ,
+                    globalTransforms[parentIndex].pos.x, globalTransforms[parentIndex].pos.y, globalTransforms[parentIndex].pos.z,
+                    globalTransforms[i].pos.x, globalTransforms[i].pos.y, globalTransforms[i].pos.z,
                     1, 0, 0 
                 );
             }
