@@ -6,9 +6,11 @@
 #include "map"
 
 #include "stdafx.h"
-
+#include <vector>
+#include <iostream>
 #include "Engine.h"
 #include "Simulation.h"
+#include "math.h"
 
 
 struct BoneTransform {
@@ -84,6 +86,6 @@ int main()
 	CSimulation simulation;
 	Run(&simulation, 1400, 800);
 
-    return 0;
+	return 0;
 }
 
