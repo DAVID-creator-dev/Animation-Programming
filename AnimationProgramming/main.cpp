@@ -12,14 +12,22 @@
 #include "Simulation.h"
 #include "math.h"
 
-
-struct BoneTransform {
+struct BoneTransform
+{
     BoneTransform() : name(nullptr), pos(Vec3(0, 0, 0)), rot(Quaternion(0, 0, 0, 0)) {}
-    
     const char* name; 
     Vec3 pos; 
     Quaternion rot; 
 };
+
+class Animation
+{
+public:
+    Animation() {}
+    ~Animation() {}
+    std::vector<std::vector<BoneTransform>> animSequence;
+};
+
 
 void CombineTransform(const BoneTransform& parent, BoneTransform& children) {
     Vec3 rotatedPos = parent.rot.multiplyVector(children.pos);
@@ -33,53 +41,67 @@ void CombineTransform(const BoneTransform& parent, BoneTransform& children) {
 class CSimulation : public ISimulation
 {
     int boneCount; 
-    std::vector<BoneTransform> globalTransforms; 
+    std::vector<BoneTransform> globalTransforms;
+    Animation walkAnim = Animation();
+    std::vector<BoneTransform> animSeque1;
 
-    virtual void Init() override {
-        int spine01 = GetSkeletonBoneIndex("spine_01");
-        int spineParent = GetSkeletonBoneParentIndex(spine01);
-        const char* spineParentName = GetSkeletonBoneName(spineParent);
-
-        float posX, posY, posZ, quatW, quatX, quatY, quatZ;
-        size_t keyCount = GetAnimKeyCount("ThirdPersonWalk.anim");
-        GetAnimLocalBoneTransform("ThirdPersonWalk.anim", spineParent, keyCount / 2, posX, posY, posZ, quatW, quatX, quatY, quatZ);
-
-        printf("Spine parent bone : %s\n", spineParentName);
-        printf("Anim key count : %ld\n", keyCount);
-        printf("Anim key : pos(%.2f,%.2f,%.2f) rotation quat(%.10f,%.10f,%.10f,%.10f)\n", posX, posY, posZ, quatW, quatX, quatY, quatZ);
-
+    virtual void Init() override
+    {
         boneCount = GetSkeletonBoneCount(); 
         globalTransforms = std::vector<BoneTransform>(boneCount); 
-        
-        for (int i = 0; i < boneCount; i++) {
+        animSeque1 = std::vector<BoneTransform>(boneCount);
+
+        for (int i = 0; i < boneCount; i++)
+        {
             GetSkeletonBoneLocalBindTransform(i,
                 globalTransforms[i].pos.x, globalTransforms[i].pos.y, globalTransforms[i].pos.z,
                 globalTransforms[i].rot.w, globalTransforms[i].rot.x, globalTransforms[i].rot.y, globalTransforms[i].rot.z
             );
 
             int parentIndex = GetSkeletonBoneParentIndex(i);
-            if (parentIndex != -1) {
+            if (parentIndex != -1) 
+            {
                 CombineTransform(globalTransforms[parentIndex], globalTransforms[i]);
             }
         }
+
+        size_t keyCount = GetAnimKeyCount("ThirdPersonWalk.anim");
+
+        for (int i = 0; i < boneCount; ++i)
+        {
+            int parentIndex = GetSkeletonBoneParentIndex(i);
+            float px, py, pz, qw, qx, qy, qz;
+            GetAnimLocalBoneTransform("ThirdPersonWalk.anim", i, 1, px, py, pz, qw, qx, qy, qz);
+
+            BoneTransform transform;
+            transform.name = GetSkeletonBoneName(i);
+            transform.pos = Vec3(px, py, pz);
+            transform.rot = Quaternion(qw, qx, qy, qz);
+
+            animSeque1.push_back(transform);
+
+            if (parentIndex != -1)
+                CombineTransform(animSeque1[parentIndex], animSeque1[i]);
+        }
     }
 
-    virtual void Update(float frameTime) override {
-        // X axis
-        //DrawLine(0, 0, 0, 100, 0, 0, 1, 0, 0);
-        // Y axis
-        //DrawLine(0, 0, 0, 0, 100, 0, 0, 1, 0);
-        // Z axis
-        //DrawLine(0, 0, 0, 0, 0, 100, 0, 0, 1);
-
-        for (int i = 1; i < boneCount; i++) {
+    virtual void Update(float frameTime) override
+    {
+        for (int i = 0; i < boneCount; i++)
+        {
             int parentIndex = GetSkeletonBoneParentIndex(i);
-            if (parentIndex != -1) {
-                DrawLine(
-                    globalTransforms[parentIndex].pos.x, globalTransforms[parentIndex].pos.y, globalTransforms[parentIndex].pos.z,
-                    globalTransforms[i].pos.x, globalTransforms[i].pos.y, globalTransforms[i].pos.z,
-                    1, 0, 0 
-                );
+            if (parentIndex != -1) 
+            {
+                //DrawLine(globalTransforms[parentIndex].pos.x, globalTransforms[parentIndex].pos.y - 50, globalTransforms[parentIndex].pos.z, globalTransforms[i].pos.x, globalTransforms[i].pos.y - 50, globalTransforms[i].pos.z, 1, 0, 0);
+            }
+        }
+        for (int i = 0; i < animSeque1.size(); ++i)
+        {
+            int parentIndex = GetSkeletonBoneParentIndex(i);
+            //std::cout << walkAnim.animSequence[0][i].pos.x << "  " << walkAnim.animSequence[0][i].pos.y << "   " << walkAnim.animSequence[0][i].pos.z << std::endl;
+            if (parentIndex != -1)
+            {
+                DrawLine(animSeque1[parentIndex].pos.x, animSeque1[parentIndex].pos.y - 50, animSeque1[parentIndex].pos.z, animSeque1[i].pos.x, animSeque1[i].pos.y - 50, animSeque1[i].pos.z, 0, 0, 1);
             }
         }
     }
