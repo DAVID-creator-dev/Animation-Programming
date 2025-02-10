@@ -57,25 +57,6 @@ public:
     Quaternion& operator*=(float scalar);
 };
 
-class Mat3 {
-public:
-    Mat3() = default; 
-
-    Mat3(float e00, float e01, float e02,
-        float e10, float e11, float e12,
-        float e20, float e21, float e22,
-        float e30, float e31, float e32) 
-    {
-        data[0] = e00;  data[1] = e01;  data[2] = e02;  
-        data[3] = e10;  data[4] = e11;  data[5] = e12;
-        data[6] = e20;  data[7] = e21;  data[8] = e22; 
-    }
-
-    float data[9]; 
-
-    float determinant() const;
-};
-
 class Mat4 {
 public:
     Mat4(float e00, float e01, float e02, float e03,
@@ -99,11 +80,9 @@ public:
     void Print(); 
     Mat4 Identity(); 
     void TRS(const Vec3& position, const Quaternion& rotation);
+    Mat4 SetTranslation(const Vec3& position); 
+    Mat4 InvertMatrix();
     void TransposeMatrix(); 
-    Mat4 getCofactor() const;
-    float determinant() const;
-    double Determinant3x3(double a, double b, double c, double d, double e, double f, double g, double h, double i) const; 
-    Mat4 getInverse() const; 
 
     void MultiplyMatrices(const Mat4& other); 
     Mat4 operator*(const Mat4& other) const; 

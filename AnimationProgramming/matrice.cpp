@@ -20,23 +20,160 @@ Mat4 Mat4::Identity() {
 void Mat4::TRS(const Vec3& position, const Quaternion& rotation)
 {
     Mat4 rotationMatrix = rotation.Matrix(); 
-    Mat4 translationMatrix = Mat4::Identity();
+    Mat4 translationMatrix = translationMatrix.SetTranslation(position); 
     Mat4 scaleMatrix = Mat4::Identity(); 
 
-    translationMatrix.data[3] = position.x;
-    translationMatrix.data[7] = position.y;
-    translationMatrix.data[11] = position.z;
-
-    rotationMatrix.MultiplyMatrices(scaleMatrix);
-
-    translationMatrix.MultiplyMatrices(rotationMatrix);  // * rotationMatrix * scaleMatrix; 
-
-        Mat4 TRS = translationMatrix; 
+    Mat4 result = translationMatrix * rotationMatrix * scaleMatrix; 
 
     for (int i = 0; i < 16; ++i) {
-        data[i] = TRS.data[i];
+        data[i] = result.data[i];
     }
 }
+
+Mat4 Mat4::SetTranslation(const Vec3& position)
+{
+    Mat4 translation = translation.Identity();
+
+    translation.data[3] = position.x;
+    translation.data[7] = position.y;
+    translation.data[11] = position.z;
+
+    return translation; 
+}
+
+Mat4 Mat4::InvertMatrix()
+{
+    Mat4 result = result.Identity();
+    double inv[16], det;
+    int i;
+
+    inv[0] = data[5] * data[10] * data[15] -
+        data[5] * data[11] * data[14] -
+        data[9] * data[6] * data[15] +
+        data[9] * data[7] * data[14] +
+        data[13] * data[6] * data[11] -
+        data[13] * data[7] * data[10];
+
+    inv[4] = -data[4] * data[10] * data[15] +
+        data[4] * data[11] * data[14] +
+        data[8] * data[6] * data[15] -
+        data[8] * data[7] * data[14] -
+        data[12] * data[6] * data[11] +
+        data[12] * data[7] * data[10];
+
+    inv[8] = data[4] * data[9] * data[15] -
+        data[4] * data[11] * data[13] -
+        data[8] * data[5] * data[15] +
+        data[8] * data[7] * data[13] +
+        data[12] * data[5] * data[11] -
+        data[12] * data[7] * data[9];
+
+    inv[12] = -data[4] * data[9] * data[14] +
+        data[4] * data[10] * data[13] +
+        data[8] * data[5] * data[14] -
+        data[8] * data[6] * data[13] -
+        data[12] * data[5] * data[10] +
+        data[12] * data[6] * data[9];
+
+    inv[1] = -data[1] * data[10] * data[15] +
+        data[1] * data[11] * data[14] +
+        data[9] * data[2] * data[15] -
+        data[9] * data[3] * data[14] -
+        data[13] * data[2] * data[11] +
+        data[13] * data[3] * data[10];
+
+    inv[5] = data[0] * data[10] * data[15] -
+        data[0] * data[11] * data[14] -
+        data[8] * data[2] * data[15] +
+        data[8] * data[3] * data[14] +
+        data[12] * data[2] * data[11] -
+        data[12] * data[3] * data[10];
+
+    inv[9] = -data[0] * data[9] * data[15] +
+        data[0] * data[11] * data[13] +
+        data[8] * data[1] * data[15] -
+        data[8] * data[3] * data[13] -
+        data[12] * data[1] * data[11] +
+        data[12] * data[3] * data[9];
+
+    inv[13] = data[0] * data[9] * data[14] -
+        data[0] * data[10] * data[13] -
+        data[8] * data[1] * data[14] +
+        data[8] * data[2] * data[13] +
+        data[12] * data[1] * data[10] -
+        data[12] * data[2] * data[9];
+
+    inv[2] = data[1] * data[6] * data[15] -
+        data[1] * data[7] * data[14] -
+        data[5] * data[2] * data[15] +
+        data[5] * data[3] * data[14] +
+        data[13] * data[2] * data[7] -
+        data[13] * data[3] * data[6];
+
+    inv[6] = -data[0] * data[6] * data[15] +
+        data[0] * data[7] * data[14] +
+        data[4] * data[2] * data[15] -
+        data[4] * data[3] * data[14] -
+        data[12] * data[2] * data[7] +
+        data[12] * data[3] * data[6];
+
+    inv[10] = data[0] * data[5] * data[15] -
+        data[0] * data[7] * data[13] -
+        data[4] * data[1] * data[15] +
+        data[4] * data[3] * data[13] +
+        data[12] * data[1] * data[7] -
+        data[12] * data[3] * data[5];
+
+    inv[14] = -data[0] * data[5] * data[14] +
+        data[0] * data[6] * data[13] +
+        data[4] * data[1] * data[14] -
+        data[4] * data[2] * data[13] -
+        data[12] * data[1] * data[6] +
+        data[12] * data[2] * data[5];
+
+    inv[3] = -data[1] * data[6] * data[11] +
+        data[1] * data[7] * data[10] +
+        data[5] * data[2] * data[11] -
+        data[5] * data[3] * data[10] -
+        data[9] * data[2] * data[7] +
+        data[9] * data[3] * data[6];
+
+    inv[7] = data[0] * data[6] * data[11] -
+        data[0] * data[7] * data[10] -
+        data[4] * data[2] * data[11] +
+        data[4] * data[3] * data[10] +
+        data[8] * data[2] * data[7] -
+        data[8] * data[3] * data[6];
+
+    inv[11] = -data[0] * data[5] * data[11] +
+        data[0] * data[7] * data[9] +
+        data[4] * data[1] * data[11] -
+        data[4] * data[3] * data[9] -
+        data[8] * data[1] * data[7] +
+        data[8] * data[3] * data[5];
+
+    inv[15] = data[0] * data[5] * data[10] -
+        data[0] * data[6] * data[9] -
+        data[4] * data[1] * data[10] +
+        data[4] * data[2] * data[9] +
+        data[8] * data[1] * data[6] -
+        data[8] * data[2] * data[5];
+
+    det = data[0] * inv[0] + data[1] * inv[4] + data[2] * inv[8] + data[3] * inv[12];
+
+    if (det == 0) {
+        std::cout << "non ?" << std::endl;
+        return Identity(); 
+    }
+
+    det = 1.0 / det;
+
+    for (i = 0; i < 16; i++)
+        result.data[i] = inv[i] * det;
+
+    return result; 
+}
+
 
 void Mat4::MultiplyMatrices(const Mat4& other)
 {
@@ -73,41 +210,6 @@ Mat4 Mat4::operator*(const Mat4& other) const
 
     return result; 
 }
-
-Mat4 Mat4::getInverse() const {
-    float det = determinant();
-    if (det == 0) {
-        std::cout << "Matrix is singular, cannot invert." << std::endl;
-        exit(1);
-    }
-
-    Mat4 cofactorMatrix = getCofactor();
-    cofactorMatrix.TransposeMatrix();
-
-    double invDet = 1.0 / det;
-    Mat4 inverseMatrix;
-    for (size_t i = 0; i < 16; ++i) {
-        inverseMatrix.data[i] = invDet * cofactorMatrix.data[i];
-    }
-
-    return inverseMatrix;
-}
-
-float Mat4::determinant() const {
-    float det = 0;
-
-    det += data[0] * Determinant3x3(data[5], data[6], data[7], data[9], data[10], data[11], data[13], data[14], data[15]);
-    det -= data[1] * Determinant3x3(data[4], data[6], data[7], data[8], data[10], data[11], data[12], data[14], data[15]);
-    det += data[2] * Determinant3x3(data[4], data[5], data[7], data[8], data[9], data[11], data[12], data[13], data[15]);
-    det -= data[3] * Determinant3x3(data[4], data[5], data[6], data[8], data[9], data[10], data[12], data[13], data[14]);
-
-    return det;
-}
-
-double Mat4::Determinant3x3(double a, double b, double c, double d, double e, double f, double g, double h, double i) const {
-    return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
-}
-
 void Mat4::TransposeMatrix()
 {
     double temp;
@@ -118,36 +220,4 @@ void Mat4::TransposeMatrix()
             data[j * 4 + i] = temp;
         }
     }
-}
-
-Mat4 Mat4::getCofactor() const {
-    Mat4 solution;
-
-    for (size_t i = 0; i < 4; ++i) {
-        for (size_t j = 0; j < 4; ++j) {
-            Mat3 subMatrix;
-            int p = 0, q = 0;
-            for (size_t x = 0; x < 4; ++x) {
-                if (x == i) continue;
-                q = 0;
-                for (size_t y = 0; y < 4; ++y) {
-                    if (y == j) continue;
-                    subMatrix.data[p * 3 + q] = data[x * 4 + y];
-                    ++q;
-                }
-                ++p;
-            }
-            double cofactorSign = ((i + j) % 2 == 0) ? 1.0 : -1.0;
-            solution.data[i * 4 + j] = cofactorSign * subMatrix.determinant();
-        }
-    }
-
-    return solution;
-}
-
-float Mat3::determinant() const {
-    float det = data[0] * (data[4] * data[8] - data[5] * data[7])
-        - data[1] * (data[3] * data[8] - data[5] * data[6])
-        + data[2] * (data[3] * data[7] - data[4] * data[6]);
-    return det;
 }
