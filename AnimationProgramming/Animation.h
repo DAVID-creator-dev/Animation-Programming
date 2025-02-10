@@ -10,27 +10,41 @@ struct BoneTransform
     Quaternion rot;
 };
 
+void CombineTransform(const BoneTransform& parent, BoneTransform& children, BoneTransform& animation)
+{
+    Vec3 globalPos = children.pos + animation.pos;
+
+    Quaternion globalRot = children.rot * animation.rot;
+
+    Vec3 rotatedPos = parent.rot.multiplyVector(globalPos);
+
+    children.pos = parent.pos + rotatedPos;
+
+    children.rot = parent.rot * globalRot;
+}
+
 class Animation
 {
 public:
+    int keyFrame;
+    const char* filename;
     float currentTime = 0.0f;
     int currentKeyFrame = 0;
-
+    int animationDuration;
     std::vector<std::vector<BoneTransform>> animeSeq;
     std::vector<std::vector<BoneTransform>> globalTransforms;
 
     Animation() {}
-    Animation(int keyFrame)
+    Animation(const char* _filename)
     {
-        animeSeq = std::vector<std::vector<BoneTransform>>(keyFrame);
-        globalTransforms = std::vector<std::vector<BoneTransform>>(keyFrame);
+        filename = _filename;
     }
     ~Animation() {}
 
-    void PlayAnimation(float frameTime, int keyFrame, int boneCount, float blendSpeed)
+    void PlayAnimation(float frameTime, int boneCount, float blendSpeed)
     {
         frameTime *= blendSpeed;
-        float animationDuration = keyFrame - 1;
+        animationDuration = keyFrame - 1;
 
         currentTime += frameTime;
         if (currentTime >= animationDuration)
@@ -63,4 +77,35 @@ public:
             }
         }
     }
+
+    void LoadAnimation(int boneCount)
+    {
+        keyFrame = GetAnimKeyCount(filename);
+
+        animeSeq = std::vector<std::vector<BoneTransform>>(keyFrame);
+        globalTransforms = std::vector<std::vector<BoneTransform>>(keyFrame);
+
+        for (int i = 0; i < keyFrame; i++)
+        {
+            animeSeq[i] = std::vector<BoneTransform>(boneCount);
+            globalTransforms[i] = std::vector<BoneTransform>(boneCount);
+
+            for (int j = 0; j < boneCount; j++)
+            {
+                GetSkeletonBoneLocalBindTransform(j, globalTransforms[i][j].pos.x, globalTransforms[i][j].pos.y, globalTransforms[i][j].pos.z,
+                    globalTransforms[i][j].rot.w, globalTransforms[i][j].rot.x, globalTransforms[i][j].rot.y, globalTransforms[i][j].rot.z);
+
+                GetAnimLocalBoneTransform(filename, j, i, animeSeq[i][j].pos.x, animeSeq[i][j].pos.y, animeSeq[i][j].pos.z, animeSeq[i][j].rot.w, animeSeq[i][j].rot.x, animeSeq[i][j].rot.y, animeSeq[i][j].rot.z);
+
+                int parentIndex = GetSkeletonBoneParentIndex(j);
+                if (parentIndex != -1)
+                    CombineTransform(globalTransforms[i][parentIndex], globalTransforms[i][j], animeSeq[i][j]);
+            }
+        }
+    }
+
+    /*float GetDuration(Animation& anim)
+    {
+        return animationDuration / anim.animationDuration;
+    }*/
 };

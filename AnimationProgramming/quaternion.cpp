@@ -68,3 +68,22 @@ Quaternion& Quaternion::operator*=(float scalar)
     w *= scalar;
     return *this; 
 }
+
+Mat4 Quaternion::Matrix() const
+{
+    Mat4 mat = mat.Identity(); 
+
+    mat.data[0] = 1.0f - 2.0f * (y * y + z * z);
+    mat.data[1] = 2.0f * (x * y - z * w);
+    mat.data[2] = 2.0f * (x * z + y * w);
+
+    mat.data[4] = 2.0f * (x * y + z * w);
+    mat.data[5] = 1.0f - 2.0f * (x * x + z * z);
+    mat.data[6] = 2.0f * (y * z - x * w);
+
+    mat.data[8] = 2.0f * (x * z - y * w);
+    mat.data[9] = 2.0f * (y * z + x * w);
+    mat.data[10] = 1.0f - 2.0f * (x * x + y * y);
+
+    return mat;
+}
