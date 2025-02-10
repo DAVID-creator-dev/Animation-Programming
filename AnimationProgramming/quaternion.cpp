@@ -22,6 +22,24 @@ Quaternion Quaternion::multiplyQuaternion(Quaternion q) const
     );
 }
 
+float Quaternion::Norm() const
+{
+    return sqrt(w * w + x * x + y * y + z * z);
+}
+
+Quaternion Quaternion::Normalize()
+{
+    float n = Norm();
+    if (n > 0.0f) { 
+        w /= n;
+        x /= n;
+        y /= n;
+        z /= n;
+    }
+
+    return *this;
+}
+
 Vec3 Quaternion::multiplyVector(const Vec3& other) const
 {
     Quaternion qV = Quaternion(other.x, other.y, other.z, 0);
@@ -30,6 +48,49 @@ Vec3 Quaternion::multiplyVector(const Vec3& other) const
     Quaternion result = (*this) * qV * qConjugate;
    
     return Vec3(result.x, result.y, result.z);
+}
+
+Quaternion Quaternion::Slerp(const Quaternion& a, const Quaternion& b, float t)
+{
+    t = Clamp(t, 0.0f, 1.0f);
+
+    float dot = a.w * b.w + a.x * b.x + a.y * b.y + a.z * b.z;
+
+    if (dot > 0.9995f) {
+        return Quaternion(
+            a.x + (b.x - a.x) * t,
+            a.y + (b.y - a.y) * t,
+            a.z + (b.z - a.z) * t, 
+            a.w + (b.w - a.w) * t
+        ).Normalize();
+    }
+
+    if (dot < 0.0f) {
+        return Slerp(a, Quaternion(-b.x, -b.y, -b.z, -b.w), t);
+    }
+
+    float theta_0 = acos(dot);    
+    float theta = theta_0 * t;    
+
+    float sin_theta = sin(theta);
+    float sin_theta_0 = sin(theta_0);
+
+    float s0 = cos(theta) - dot * sin_theta / sin_theta_0;
+    float s1 = sin_theta / sin_theta_0;
+
+    return Quaternion(
+        (s0 * a.x) + (s1 * b.x),
+        (s0 * a.y) + (s1 * b.y),
+        (s0 * a.z) + (s1 * b.z), 
+        (s0 * a.w) + (s1 * b.w)
+    ).Normalize();
+}
+
+float Quaternion::Clamp(float value, float min, float max)
+{
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
 }
 
 Quaternion Quaternion::operator*(const Quaternion& other) const

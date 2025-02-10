@@ -1,6 +1,3 @@
-// main.cpp : Defines the entry point for the console application.
-//
-
 #include "vector"
 #include "math.h"
 #include "map"
@@ -12,17 +9,17 @@
 #include "Simulation.h"
 #include "math.h"
 
-Quaternion globalQuaternion = Quaternion(0.0f, 0.0f, 0.0f, 0.0f);
-
-struct BoneTransform {
-    BoneTransform() : pos(Vec3(0.0f, 0.0f, 0.0f)), rot(Quaternion(0.0f, 0.0f, 0.0f, 1.0f)), mat(Mat4()){}
-
+struct BoneTransform
+{
+    BoneTransform() : name(nullptr), pos(Vec3(0, 0, 0)), rot(Quaternion(0, 0, 0, 0)) {}
+    const char* name;
     Vec3 pos;
     Quaternion rot;
     Mat4 mat;
 };
 
-void CombineTransform(const BoneTransform& parent, BoneTransform& children) {
+void CombineTransform(const BoneTransform& parent, BoneTransform& children)
+{
     Vec3 rotatedPos = parent.rot.multiplyVector(children.pos);
 
     children.pos = parent.pos + rotatedPos;
@@ -43,89 +40,110 @@ void CombineTransform(const BoneTransform& parent, BoneTransform& children, Bone
     children.pos = parent.pos + rotatedPos;
 
     children.rot = parent.rot * globalRot;
-    
+
     children.mat.TRS(children.pos, children.rot);
 }
-
 
 class CSimulation : public ISimulation
 {
     int boneCount;
+    int keyFrame;
+    std::vector<std::vector<BoneTransform>> globalTransforms;
+    std::vector<std::vector<BoneTransform>> animeTransforms;
     std::vector<BoneTransform> bindPoseTransforms;
-    std::vector<BoneTransform> globalTransforms;
-    std::vector<BoneTransform> animeSeq; 
     std::vector<float> skinningData;
 
-    virtual void Init() override {
-        boneCount = 64; 
-        globalTransforms = std::vector<BoneTransform>(boneCount);
-        bindPoseTransforms = std::vector<BoneTransform>(boneCount); 
-        animeSeq = std::vector<BoneTransform>(boneCount);
+    float currentTime = 0.0f;
+    int currentKeyFrame = 0;
+    float speed = 10.0f;
 
+    virtual void Init() override
+    {
+        boneCount = 64;
+        keyFrame = GetAnimKeyCount("ThirdPersonWalk.anim");
+
+        globalTransforms = std::vector<std::vector<BoneTransform>>(keyFrame, std::vector<BoneTransform>(boneCount));
+        animeTransforms = std::vector<std::vector<BoneTransform>>(keyFrame, std::vector<BoneTransform>(boneCount));
+        bindPoseTransforms = std::vector<BoneTransform>(boneCount);
         skinningData = std::vector<float>(boneCount * 16);
 
-        for (int i = 0; i < boneCount; i++) {
-            GetSkeletonBoneLocalBindTransform(i,
-                globalTransforms[i].pos.x, globalTransforms[i].pos.y, globalTransforms[i].pos.z,
-                globalTransforms[i].rot.w, globalTransforms[i].rot.x, globalTransforms[i].rot.y, globalTransforms[i].rot.z
+        for (int i = 0; i < keyFrame; i++) {
+            for (int j = 0; j < boneCount; j++) {
+                GetSkeletonBoneLocalBindTransform(j,
+                    globalTransforms[i][j].pos.x, globalTransforms[i][j].pos.y, globalTransforms[i][j].pos.z,
+                    globalTransforms[i][j].rot.w, globalTransforms[i][j].rot.x, globalTransforms[i][j].rot.y, globalTransforms[i][j].rot.z
+                );
+
+                GetAnimLocalBoneTransform("ThirdPersonWalk.anim", j, i, animeTransforms[i][j].pos.x, animeTransforms[i][j].pos.y, animeTransforms[i][j].pos.z,
+                    animeTransforms[i][j].rot.w, animeTransforms[i][j].rot.x, animeTransforms[i][j].rot.y, animeTransforms[i][j].rot.z);
+
+                bindPoseTransforms[j] = globalTransforms[i][j];
+
+                int parentIndex = GetSkeletonBoneParentIndex(j);
+                if (parentIndex != -1)
+                {
+                    CombineTransform(globalTransforms[i][parentIndex], globalTransforms[i][j], animeTransforms[i][j]);
+                    CombineTransform(bindPoseTransforms[parentIndex], bindPoseTransforms[j]);
+                }
+            }
+        }
+    }
+
+    virtual void Update(float frameTime) override
+    {
+        frameTime *= speed;
+        float animationDuration = keyFrame - 1;
+
+        currentTime += frameTime;
+        if (currentTime >= animationDuration)
+            currentTime = 0.0f;
+
+        currentKeyFrame = currentTime;
+        int nextKeyFrame = currentKeyFrame + 1;
+        if (nextKeyFrame >= keyFrame)
+            nextKeyFrame = 0;
+
+        float t = currentTime - currentKeyFrame;
+
+        for (int j = 0; j < boneCount; j++)
+        {
+            BoneTransform interpolatedBone;
+
+            interpolatedBone.pos = globalTransforms[currentKeyFrame][j].pos.Lerp(
+                globalTransforms[currentKeyFrame][j].pos,
+                globalTransforms[nextKeyFrame][j].pos, t
             );
 
-            GetAnimLocalBoneTransform("ThirdPersonWalk.anim", i, 5, animeSeq[i].pos.x, animeSeq[i].pos.y, animeSeq[i].pos.z, animeSeq[i].rot.w, animeSeq[i].rot.x, animeSeq[i].rot.y, animeSeq[i].rot.z);
+            interpolatedBone.rot = globalTransforms[currentKeyFrame][j].rot.Slerp(
+                globalTransforms[currentKeyFrame][j].rot,
+                globalTransforms[nextKeyFrame][j].rot, t
+            );
 
-            bindPoseTransforms[i] = globalTransforms[i];
+            interpolatedBone.mat.TRS(interpolatedBone.pos, interpolatedBone.rot);
+            interpolatedBone.mat = interpolatedBone.mat * bindPoseTransforms[j].mat.InvertMatrix(); 
+            interpolatedBone.mat.TransposeMatrix(); 
 
-            int parentIndex = GetSkeletonBoneParentIndex(i);
-            if (parentIndex != -1) {
-                CombineTransform(globalTransforms[parentIndex], globalTransforms[i], animeSeq[i]);
-                CombineTransform(bindPoseTransforms[parentIndex], bindPoseTransforms[i]);
-            }
-        }
+            std::memcpy(&skinningData[j * 16], interpolatedBone.mat.data, 16 * sizeof(float));
 
-        for (size_t i = 0; i < boneCount; i++) {
-
-            std::cout << "Bone " << i << " Offset Matrix:\n";
-            for (int j = 0; j < 16; j++) {
-                std::cout << globalTransforms[i].mat.data[j] << " ";
-                if (j % 4 == 3) std::cout << std::endl;
-            }
-
-            globalTransforms[i].mat = globalTransforms[i].mat * bindPoseTransforms[i].mat.InvertMatrix();
-            globalTransforms[i].mat.TransposeMatrix();
-
-            std::cout << "Bone " << i << " Offset Matrix:\n";
-            for (int j = 0; j < 16; j++) {
-                std::cout << globalTransforms[i].mat.data[j] << " ";
-                if (j % 4 == 3) std::cout << std::endl;
-            }
-        }
-
-        for (size_t i = 0; i < boneCount; i++) {
-            std::memcpy(&skinningData[i * 16], globalTransforms[i].mat.data, 16 * sizeof(float));
-        }
-    }
-
-    virtual void Update(float frameTime) override {
-        if (skinningData.empty()) {
-            std::cerr << "Error: skinningData is empty!" << std::endl;
-            return;
-        }
-        else {
-            SetSkinningPose(skinningData.data(), 64);
-        }
-
-        for (int i = 1; i < boneCount; i++) {
-
-            int parentIndex = GetSkeletonBoneParentIndex(i);
-
-            if (parentIndex != -1) {
-                DrawLine(
-                    globalTransforms[parentIndex].pos.x, globalTransforms[parentIndex].pos.y, globalTransforms[parentIndex].pos.z,
-                    globalTransforms[i].pos.x, globalTransforms[i].pos.y, globalTransforms[i].pos.z,
-                    1, 0, 0
+            
+            int parentIndex = GetSkeletonBoneParentIndex(j);
+            if (parentIndex != -1)
+            {
+                Vec3 interpolatedParentPos = globalTransforms[currentKeyFrame][parentIndex].pos.Lerp(
+                    globalTransforms[currentKeyFrame][parentIndex].pos,
+                    globalTransforms[nextKeyFrame][parentIndex].pos, t
                 );
+
+                DrawLine(interpolatedParentPos.x, interpolatedParentPos.y - 50, interpolatedParentPos.z,
+                    interpolatedBone.pos.x, interpolatedBone.pos.y - 50, interpolatedBone.pos.z,
+                    1, 0, 0);
             }
+
         }
+
+        SetSkinningPose(skinningData.data(), 64);
     }
+
 };
 
 int main()
@@ -135,4 +153,3 @@ int main()
 
     return 0;
 }
-

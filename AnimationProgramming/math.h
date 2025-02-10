@@ -27,16 +27,9 @@ public:
     Vec3& operator-=(const Vec3& other); 
     Vec3& operator*=(float scalar); 
     Vec3& operator*=(const Vec3& other);
-    Vec3& operator/=(float scalar); 
-
+    Vec3& operator/=(float scalar);
     
-
-    static float Clamp(float value, float min, float max) {
-        if (value < min) return min;
-        if (value > max) return max;
-        return value;
-    }
-
+    static float Clamp(float value, float min, float max); 
     static Vec3 Lerp(const Vec3& a, const Vec3& b, float t);
 };
 
@@ -50,11 +43,17 @@ public:
     Mat4 Matrix() const;
     Quaternion inverseQuaternion() const;
     Quaternion multiplyQuaternion(Quaternion q) const;
+    float Norm() const;
+    Quaternion Normalize(); 
     Vec3 multiplyVector(const Vec3& other) const;
+    Quaternion operator+(const Quaternion& q) const; 
     Quaternion operator*(const Quaternion& other) const;
     Quaternion operator*(float scalar) const;
     Quaternion& operator*=(const Quaternion& other);
     Quaternion& operator*=(float scalar);
+
+    Quaternion Slerp(const Quaternion& a, const Quaternion& b, float t); 
+    static float Clamp(float value, float min, float max); 
 };
 
 class Mat4 {
