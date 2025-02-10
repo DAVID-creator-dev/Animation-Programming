@@ -106,3 +106,11 @@ Vec3& Vec3::operator/=(float scalar)
     z /= scalar;
     return *this;
 }
+
+Vec3 Vec3::Lerp(const Vec3& a, const Vec3& b, float t)
+{
+    t = Clamp(t, 0.0f, 1.0f);
+    return Vec3(a.x + (b.x - a.x) * t,
+        a.y + (b.y - a.y) * t,
+        a.z + (b.z - a.z) * t);
+}

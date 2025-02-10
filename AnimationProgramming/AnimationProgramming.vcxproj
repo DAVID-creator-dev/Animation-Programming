@@ -163,6 +163,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="matrice.cpp" />
     <ClCompile Include="quaternion.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="vec3.cpp" />

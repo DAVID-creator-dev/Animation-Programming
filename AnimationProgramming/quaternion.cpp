@@ -71,23 +71,19 @@ Quaternion& Quaternion::operator*=(float scalar)
 
 Mat4 Quaternion::Matrix() const
 {
-    float xx = x * x, yy = y * y, zz = z * z;
-    float xy = x * y, xz = x * z, yz = y * z;
-    float wx = w * x, wy = w * y, wz = w * z;
-
     Mat4 mat = mat.Identity(); 
 
-    mat.data[0] = 1.0f - 2.0f * (yy + zz);
-    mat.data[1] = 2.0f * (xy - wz);
-    mat.data[2] = 2.0f * (xz + wy);
+    mat.data[0] = 1.0f - 2.0f * (y * y + z * z);
+    mat.data[1] = 2.0f * (x * y - z * w);
+    mat.data[2] = 2.0f * (x * z + y * w);
 
-    mat.data[4] = 2.0f * (xy + wz);
-    mat.data[5] = 1.0f - 2.0f * (xx + zz);
-    mat.data[6] = 2.0f * (yz - wx);
+    mat.data[4] = 2.0f * (x * y + z * w);
+    mat.data[5] = 1.0f - 2.0f * (x * x + z * z);
+    mat.data[6] = 2.0f * (y * z - x * w);
 
-    mat.data[8] = 2.0f * (xz - wy);
-    mat.data[9] = 2.0f * (yz + wx);
-    mat.data[10] = 1.0f - 2.0f * (xx + yy);
+    mat.data[8] = 2.0f * (x * z - y * w);
+    mat.data[9] = 2.0f * (y * z + x * w);
+    mat.data[10] = 1.0f - 2.0f * (x * x + y * y);
 
     return mat;
 }
