@@ -107,6 +107,13 @@ Vec3& Vec3::operator/=(float scalar)
     return *this;
 }
 
+float Vec3::Clamp(float value, float min, float max)
+{
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
+}
+
 Vec3 Vec3::Lerp(const Vec3& a, const Vec3& b, float t)
 {
     t = Clamp(t, 0.0f, 1.0f);
