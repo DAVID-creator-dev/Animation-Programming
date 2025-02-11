@@ -14,6 +14,10 @@ class CSimulation : public ISimulation
     int boneCount;
     int keyFrame;
 
+    float timer = 0.f;
+    float timerLimit = 3.f;
+    bool flipflop;
+
     std::vector<Animation*> anims;
     Animation* walkAnimation;
     Animation* runAnimation;
@@ -34,9 +38,27 @@ class CSimulation : public ISimulation
 
     virtual void Update(float frameTime) override
     {
-        runAnimation->PlayAnimation(frameTime, boneCount, 15.0f);
+        timer += frameTime;
 
+        if (timer > timerLimit)
+        {
+            if (flipflop)
+                flipflop = false;
+            else
+                flipflop = true;
 
+            timer = 0.f;
+        }
+
+        if (flipflop)
+        {
+            runAnimation->BlendAnimation(runAnimation, boneCount);
+            //walkAnimation->PlayAnimation(frameTime, boneCount, 15.0f);
+        }
+        else
+        {
+            runAnimation->PlayAnimation(frameTime, boneCount, 15.0f);
+        }
     }
 
 };

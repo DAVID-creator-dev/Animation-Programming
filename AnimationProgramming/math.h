@@ -52,7 +52,7 @@ public:
     Quaternion& operator*=(const Quaternion& other);
     Quaternion& operator*=(float scalar);
 
-    Quaternion Slerp(const Quaternion& a, const Quaternion& b, float t); 
+    static Quaternion Slerp(const Quaternion& a, const Quaternion& b, float t); 
     static float Clamp(float value, float min, float max); 
 };
 

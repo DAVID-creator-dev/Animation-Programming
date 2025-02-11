@@ -45,6 +45,7 @@ public:
     float currentTime = 0.0f;
     int currentKeyFrame = 0;
     int animationDuration;
+    int nextKeyFrame;
     std::vector<std::vector<BoneTransform>> animeSeq;
     std::vector<std::vector<BoneTransform>> globalTransforms;
     std::vector<BoneTransform> bindPoseTransforms;
@@ -59,17 +60,21 @@ public:
 
     void PlayAnimation(float frameTime, int boneCount, float blendSpeed)
     {
-        frameTime *= blendSpeed;
-        float animationDuration = keyFrame - 1;
+        float animationDuration = (keyFrame - 1);
+        currentTime += frameTime * blendSpeed;
 
-        currentTime += frameTime;
         if (currentTime >= animationDuration)
+        {
             currentTime = 0.0f;
-
+        }
+          
         currentKeyFrame = currentTime;
-        int nextKeyFrame = currentKeyFrame + 1;
+        nextKeyFrame = currentKeyFrame + 1;
+
         if (nextKeyFrame >= keyFrame)
-            nextKeyFrame = 0;
+        {
+           nextKeyFrame = 0;
+        }
 
         float t = currentTime - currentKeyFrame;
 
@@ -148,17 +153,25 @@ public:
         }
     }
 
-    void BlendAnimation(Animation& anim2, int boneCount, float blendFactor)
+    void BlendAnimation(Animation* anim2, int boneCount)
     {
-        blendFactor = Clamp(0.1f, 1.0f, blendFactor);
+        float blendFactor = 0;
+        std::vector<BoneTransform> blendedTransform(boneCount);
+        blendFactor = Vec3::Clamp(blendFactor, 0.1f, 1.0f);
+        std::vector<float> blendSkinningData;;
+        
         for (int i = 0; i < boneCount; ++i)
         {
+            blendedTransform[i].pos = Vec3::Lerp(globalTransforms[currentKeyFrame][i].pos, anim2->globalTransforms[nextKeyFrame][i].pos, blendFactor);
+            blendedTransform[i].rot = Quaternion::Slerp(globalTransforms[currentKeyFrame][i].rot, anim2->globalTransforms[nextKeyFrame][i].rot, blendFactor);
 
+            blendedTransform[i].mat.TRS(blendedTransform[i].pos, blendedTransform[i].rot);
+            blendedTransform[i].mat = blendedTransform[i].mat * blendedTransform[i].mat.InvertMatrix();
+            blendedTransform[i].mat.TransposeMatrix();
+
+           // std::memcpy(&blendSkinningData[i * 16], blendedTransform[i].mat.data, 16 * sizeof(float));
         }
+       // SetSkinningPose(blendSkinningData.data(), 64);
+      //  return;
     }
-
-    /*float GetDuration(Animation& anim)
-    {
-        return animationDuration / anim.animationDuration;
-    }*/
 };
