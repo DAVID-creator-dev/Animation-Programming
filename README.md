@@ -1,19 +1,28 @@
-# Projet Animation en C++
+# **Projet d'Animation - Marche et Course**
 
-Ce projet permet d'observer des animations de marche et de courses sur un modele neutre (UE) et son squelette avec plusieurs outils.
+Ce projet permet d'observer les animations de marche et de course sur un modèle neutre (UE) et son squelette, tout en offrant plusieurs outils interactifs pour une meilleure visualisation.
 
-1 - Camera
+## **Fonctionnalités**
 
-A l'aide des touches 'w', 'a', 's', 'd' et de la souris nous pouvons controler la camera pour regarder l'animation sous tous ses angles
+###  **Contrôle de la Caméra**
+Utilisez les touches `W`, `A`, `S`, `D` ainsi que la souris pour déplacer la caméra et observer l'animation sous tous les angles.
 
-2 - Vitesse controlable
+###  **Ajustement de la Vitesse**
+Modifiez la vitesse de l'animation grâce aux flèches directionnelles :
+- `Flèche Haut` : Augmente la vitesse.
+- `Flèche Bas` : Diminue la vitesse.
 
-Les fleches hautes et basses permettent de reguler la vitesse des animation pour examiner ses sequences comme on le souhaite
+###  **Blending entre plusieurs animations**
+La `Flèche Gauche` permet de basculer en douceur entre l'animation de marche et celle de course.
 
-3 - Blending entre plusieurs animations
+###  **Rembobinage des Animations**
+La `Flèche Droite` permet d'inverser la lecture de l'animation pour la jouer en sens inverse.
 
-La fleche gauche permet de switch entre les animations de marche et de course avec une transition douce entre les deux
+## **Tableau des commandes**
 
-4 - Rembobinage des animations
-
-La fleche droite permet de jouer les animations dans le sens inverse
+| **Action**                          | **Touche(s)**                  | **Description**                                                  |
+|-------------------------------------|--------------------------------|------------------------------------------------------------------|
+| **Déplacement de la caméra**        | `W`, `A`, `S`, `D` + Souris    | Contrôle la caméra pour observer l'animation.                    |
+| **Ajuster la vitesse de l'animation** | `Flèche Haut` / `Flèche Bas`  | Augmente ou diminue la vitesse de l'animation.                   |
+| **Transition entre marche et course** | `Flèche Gauche`               | Changement entre l'animation de marche et celle de course. |
+| **Lecture en sens inverse**         | `Flèche Droite`               | Permet de rembobiner et de jouer l'animation à l'envers.         |
