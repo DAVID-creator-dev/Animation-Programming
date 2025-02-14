@@ -18,6 +18,8 @@ class CSimulation : public ISimulation
     Animation* runAnimation;
     Blend* blend;
 
+    float blendFactor = 0.0f; 
+
     float timer = 0.0f;
     float timerLimit = 2.4f;
     bool running = false;
@@ -33,31 +35,17 @@ class CSimulation : public ISimulation
 
         walkAnimation->LoadAnimation();
         runAnimation->LoadAnimation();
-
-        blend->AddAnimation(walkAnimation);
-        blend->AddAnimation(runAnimation);
-
-        blend->SetCurrentAnimation(walkAnimation);
     }
 
     virtual void Update(float frameTime) override
-    {
-        timer += frameTime;
-        if (timer > timerLimit)
-        {
-            timer = 0.0f;
+    {  
 
-            if (running) {
-                blend->SetNextAnimation(walkAnimation, 0.2f);
-                running = false; 
-            }
-            else {
-                blend->SetNextAnimation(runAnimation, 0.2f);
-                running = true; 
-            }
+        blendFactor += frameTime; 
+        if (blendFactor >= 1.0f ) {
+            blendFactor = 1.0f; 
         }
-        
-        blend->PlayAnimation(frameTime, 30.f);
+
+        blend->PlayAnimation(frameTime, 30.f, blendFactor, walkAnimation, runAnimation);
     }
 };
 
