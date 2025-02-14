@@ -102,6 +102,13 @@ public:
     std::vector<float> skinningData;
     float currentTime = 0.0f;
     bool isPaused = false;
+    int keyFrame = 0;
+    float adjustedFrameTime = 0.0f;
+    float animationDuration = 0.0f;
+    int currentKeyFrame = 0;
+    int nextKeyFrame = 0;
+    float t = 0.0f;
+    Vec3 interpolatedParentPos = Vec3(0, 0, 0);
 
     Blend()
     {
@@ -119,17 +126,21 @@ public:
 
     void PlayAnimation(float frameTime, float blendSpeed, float blendFactor, Animation* anim1, Animation* anim2)
     {
-        int keyFrame = anim1->keyFrame;
-        float adjustedFrameTime = frameTime * blendSpeed;
-        float animationDuration = keyFrame - 1;
+        if (!isPaused)
+        {
+            keyFrame = anim1->keyFrame;
+            adjustedFrameTime = frameTime * blendSpeed;
+            animationDuration = keyFrame - 1;
 
-        currentTime += adjustedFrameTime;
-        if (currentTime >= animationDuration)
-            currentTime = 0.0f;
+            currentTime += adjustedFrameTime;
+            if (currentTime >= animationDuration)
+                currentTime = 0.0f;
 
-        int currentKeyFrame = static_cast<int>(currentTime);
-        int nextKeyFrame = (currentKeyFrame + 1) % keyFrame;
-        float t = currentTime - currentKeyFrame;
+            currentKeyFrame = static_cast<int>(currentTime);
+            nextKeyFrame = (currentKeyFrame + 1) % keyFrame;
+            t = currentTime - currentKeyFrame;
+        }
+        
 
         for (int j = 0; j < BONECOUNT; j++)
         {
