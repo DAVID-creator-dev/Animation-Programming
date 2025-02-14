@@ -57,12 +57,7 @@ class CSimulation : public ISimulation
             }
         }
         
-        if (running) {
-            blend->PlayAnimation(frameTime, 30.f);
-        }
-        else {
-            blend->PlayAnimation(frameTime, 15.f);
-        }
+        blend->PlayAnimation(frameTime, 30.f);
     }
 };
 
