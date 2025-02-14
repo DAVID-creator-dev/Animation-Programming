@@ -8,65 +8,73 @@
 #include "Simulation.h"
 #include "math.h"
 #include "Animation.h"
+#include <windows.h>
 
 class CSimulation : public ISimulation
 {
     int boneCount;
     int keyFrame;
 
-    float timer = 0.f;
-    float timerLimit = 3.f;
-    bool flipflop;
-
-    std::vector<Animation*> anims;
     Animation* walkAnimation;
     Animation* runAnimation;
+    Blend* blend;
+
+    float blendFactor = 0.0f; 
+
+    float timer = 0.0f;
+    float timerLimit = 2.4f;
+    bool running = false;
+    float blendSpeed = 30.0f;
 
     virtual void Init() override
     {
+        blend = new Blend();
+        
         boneCount = 64;
 
         walkAnimation = new Animation("ThirdPersonWalk.anim");
         runAnimation = new Animation("ThirdPersonRun.anim");
 
-        walkAnimation->LoadAnimation(boneCount);
-        runAnimation->LoadAnimation(boneCount);
-
-        anims.push_back(walkAnimation);
-        anims.push_back(runAnimation);
+        walkAnimation->LoadAnimation();
+        runAnimation->LoadAnimation();
     }
 
     virtual void Update(float frameTime) override
-    {
-        timer += frameTime;
-
-        if (timer > timerLimit)
+    {  
+        if (GetKeyState(VK_SPACE) & 0x8000)
         {
-            if (flipflop)
-                flipflop = false;
-            else
-                flipflop = true;
-
-            timer = 0.f;
+            blend->ChangeAnimState();
+            Sleep(100);
         }
 
-        if (flipflop)
+        if (GetKeyState(VK_DOWN) & 0x8000)
         {
-            runAnimation->BlendAnimation(runAnimation, boneCount);
-            //walkAnimation->PlayAnimation(frameTime, boneCount, 15.0f);
+            if (blendSpeed > 1.0f)
+                blendSpeed -= 1.0f;
+
+            Sleep(50);
         }
-        else
+
+        if (GetKeyState(VK_UP) & 0x8000)
         {
-            runAnimation->PlayAnimation(frameTime, boneCount, 15.0f);
+            blendSpeed += 1.0f;
+            Sleep(50);
         }
+
+        blendFactor += frameTime; 
+        if (blendFactor >= 1.0f ) {
+            blendFactor = 1.0f; 
+        }
+
+        blend->PlayAnimation(frameTime, blendSpeed, blendFactor, walkAnimation, runAnimation);
     }
-
 };
 
 int main()
 {
+    
     CSimulation simulation;
     Run(&simulation, 1400, 800);
-
+    
     return 0;
 }
