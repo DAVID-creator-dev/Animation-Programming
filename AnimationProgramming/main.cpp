@@ -14,37 +14,63 @@ class CSimulation : public ISimulation
     int boneCount;
     int keyFrame;
 
-    std::vector<Animation*> anims;
     Animation* walkAnimation;
     Animation* runAnimation;
+    Blend* blend;
+
+    float timer = 0.0f;
+    float timerLimit = 2.4f;
+    bool running = false;
 
     virtual void Init() override
     {
+        blend = new Blend();
+        
         boneCount = 64;
 
         walkAnimation = new Animation("ThirdPersonWalk.anim");
         runAnimation = new Animation("ThirdPersonRun.anim");
 
-        walkAnimation->LoadAnimation(boneCount);
-        runAnimation->LoadAnimation(boneCount);
+        walkAnimation->LoadAnimation();
+        runAnimation->LoadAnimation();
 
-        anims.push_back(walkAnimation);
-        anims.push_back(runAnimation);
+        blend->AddAnimation(walkAnimation);
+        blend->AddAnimation(runAnimation);
+
+        blend->SetCurrentAnimation(walkAnimation);
     }
 
     virtual void Update(float frameTime) override
     {
-        runAnimation->PlayAnimation(frameTime, boneCount, 15.0f);
+        timer += frameTime;
+        if (timer > timerLimit)
+        {
+            timer = 0.0f;
 
-
+            if (running) {
+                blend->SetNextAnimation(walkAnimation, 0.2f);
+                running = false; 
+            }
+            else {
+                blend->SetNextAnimation(runAnimation, 0.2f);
+                running = true; 
+            }
+        }
+        
+        if (running) {
+            blend->PlayAnimation(frameTime, 30.f);
+        }
+        else {
+            blend->PlayAnimation(frameTime, 15.f);
+        }
     }
-
 };
 
 int main()
 {
+    
     CSimulation simulation;
     Run(&simulation, 1400, 800);
-
+    
     return 0;
 }

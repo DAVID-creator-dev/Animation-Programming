@@ -3,6 +3,8 @@
 #include <vector>
 #include "Engine.h"
 
+#define BONECOUNT 64
+
 struct BoneTransform
 {
     BoneTransform() : name(nullptr), pos(Vec3(0, 0, 0)), rot(Quaternion(0, 0, 0, 0)) {}
@@ -37,18 +39,18 @@ void CombineTransform(const BoneTransform& parent, BoneTransform& children, Bone
 
     children.mat.TRS(children.pos, children.rot);
 }
+
 class Animation
 {
 public:
     int keyFrame;
-    const char* filename;
-    float currentTime = 0.0f;
     int currentKeyFrame = 0;
+    const char* filename;
     int animationDuration;
+    
     std::vector<std::vector<BoneTransform>> animeSeq;
     std::vector<std::vector<BoneTransform>> globalTransforms;
     std::vector<BoneTransform> bindPoseTransforms;
-    std::vector<float> skinningData;
 
     Animation() {}
     Animation(const char* _filename)
@@ -57,76 +59,20 @@ public:
     }
     ~Animation() {}
 
-    void PlayAnimation(float frameTime, int boneCount, float blendSpeed)
-    {
-        frameTime *= blendSpeed;
-        float animationDuration = keyFrame - 1;
-
-        currentTime += frameTime;
-        if (currentTime >= animationDuration)
-            currentTime = 0.0f;
-
-        currentKeyFrame = currentTime;
-        int nextKeyFrame = currentKeyFrame + 1;
-        if (nextKeyFrame >= keyFrame)
-            nextKeyFrame = 0;
-
-        float t = currentTime - currentKeyFrame;
-
-        for (int j = 0; j < boneCount; j++)
-        {
-            BoneTransform interpolatedBone;
-
-            interpolatedBone.pos = globalTransforms[currentKeyFrame][j].pos.Lerp(
-                globalTransforms[currentKeyFrame][j].pos,
-                globalTransforms[nextKeyFrame][j].pos, t
-            );
-
-            interpolatedBone.rot = globalTransforms[currentKeyFrame][j].rot.Slerp(
-                globalTransforms[currentKeyFrame][j].rot,
-                globalTransforms[nextKeyFrame][j].rot, t
-            );
-
-            interpolatedBone.mat.TRS(interpolatedBone.pos, interpolatedBone.rot);
-            interpolatedBone.mat = interpolatedBone.mat * bindPoseTransforms[j].mat.InvertMatrix();
-            interpolatedBone.mat.TransposeMatrix();
-
-            std::memcpy(&skinningData[j * 16], interpolatedBone.mat.data, 16 * sizeof(float));
-
-
-            int parentIndex = GetSkeletonBoneParentIndex(j);
-            if (parentIndex != -1)
-            {
-                Vec3 interpolatedParentPos = globalTransforms[currentKeyFrame][parentIndex].pos.Lerp(
-                    globalTransforms[currentKeyFrame][parentIndex].pos,
-                    globalTransforms[nextKeyFrame][parentIndex].pos, t
-                );
-
-                DrawLine(interpolatedParentPos.x, interpolatedParentPos.y - 50, interpolatedParentPos.z,
-                    interpolatedBone.pos.x, interpolatedBone.pos.y - 50, interpolatedBone.pos.z,
-                    1, 0, 0);
-            }
-
-        }
-
-        SetSkinningPose(skinningData.data(), 64);
-    }
-
-    void LoadAnimation(int boneCount)
+    void LoadAnimation()
     {
         keyFrame = GetAnimKeyCount(filename);
 
         animeSeq = std::vector<std::vector<BoneTransform>>(keyFrame);
         globalTransforms = std::vector<std::vector<BoneTransform>>(keyFrame);
-        bindPoseTransforms = std::vector<BoneTransform>(boneCount);
-        skinningData = std::vector<float>(boneCount * 16);
+        bindPoseTransforms = std::vector<BoneTransform>(BONECOUNT);
 
         for (int i = 0; i < keyFrame; i++) 
         {
-            animeSeq[i] = std::vector<BoneTransform>(boneCount);
-            globalTransforms[i] = std::vector<BoneTransform>(boneCount);
+            animeSeq[i] = std::vector<BoneTransform>(BONECOUNT);
+            globalTransforms[i] = std::vector<BoneTransform>(BONECOUNT);
 
-            for (int j = 0; j < boneCount; j++)
+            for (int j = 0; j < BONECOUNT; j++)
             {
                 GetSkeletonBoneLocalBindTransform(j,
                     globalTransforms[i][j].pos.x, globalTransforms[i][j].pos.y, globalTransforms[i][j].pos.z,
@@ -147,18 +93,131 @@ public:
             }
         }
     }
+};
 
-    void BlendAnimation(Animation& anim2, int boneCount, float blendFactor)
+class Blend {
+public:
+    std::vector<float> skinningData;
+    
+    std::vector<Animation*> animations;
+    Animation* currentAnimation;
+    Animation* nextAnimation;
+    float currentTime = 0.0f;
+
+    float blendFactor = 0.f;
+    float blendDuration = 0.2f;  
+    float blendTimeElapsed = 0.0f;
+
+    Blend()
     {
-        blendFactor = Clamp(0.1f, 1.0f, blendFactor);
-        for (int i = 0; i < boneCount; ++i)
-        {
-
-        }
+        skinningData = std::vector<float>(BONECOUNT * 16);
     }
 
-    /*float GetDuration(Animation& anim)
+    void SetCurrentAnimation(Animation* animation)
     {
-        return animationDuration / anim.animationDuration;
-    }*/
-};
+        currentAnimation = animation;
+    }
+    
+    void AddAnimation(Animation* animation)
+    {
+        animations.push_back(animation);
+    }
+
+    void SetNextAnimation(Animation* newAnimation, float blendDuration)
+    {
+        if (currentAnimation == newAnimation) return;  
+
+        nextAnimation = newAnimation;
+        blendDuration = blendDuration;
+        blendTimeElapsed = 0.0f;
+        blendFactor = 0.0f;
+    }
+
+    void PlayAnimation(float frameTime, float blendSpeed)
+    {
+        if (!currentAnimation) return;
+
+        int keyFrame = currentAnimation->keyFrame;
+        float adjustedFrameTime = frameTime * blendSpeed;
+        float animationDuration = keyFrame - 1;
+
+        if (!nextAnimation || blendFactor >= 1.0f)
+        {
+            currentTime += adjustedFrameTime;
+            if (currentTime >= animationDuration)
+                currentTime = 0.0f;
+        }
+
+        int currentKeyFrame = static_cast<int>(currentTime);
+        int nextKeyFrame = (currentKeyFrame + 1) % keyFrame;
+        float t = currentTime - currentKeyFrame;
+
+        for (int j = 0; j < BONECOUNT; j++)
+        {
+            BoneTransform interpolatedBone;
+
+            if (nextAnimation)
+            {
+                int nextAnimKeyFrame = currentKeyFrame;
+                int nextAnimNextKeyFrame = (nextAnimKeyFrame + 1) % nextAnimation->keyFrame;
+
+                Vec3 pos1 = currentAnimation->globalTransforms[currentKeyFrame][j].pos.Lerp(
+                    currentAnimation->globalTransforms[currentKeyFrame][j].pos,
+                    currentAnimation->globalTransforms[nextKeyFrame][j].pos, t
+                );
+
+                Quaternion rot1 = currentAnimation->globalTransforms[currentKeyFrame][j].rot.Slerp(
+                    currentAnimation->globalTransforms[currentKeyFrame][j].rot,
+                    currentAnimation->globalTransforms[nextKeyFrame][j].rot, t
+                );
+
+                Vec3 pos2 = nextAnimation->globalTransforms[nextAnimKeyFrame][j].pos.Lerp(
+                    nextAnimation->globalTransforms[nextAnimKeyFrame][j].pos,
+                    nextAnimation->globalTransforms[nextAnimNextKeyFrame][j].pos, t
+                );
+
+                Quaternion rot2 = nextAnimation->globalTransforms[nextAnimKeyFrame][j].rot.Slerp(
+                    nextAnimation->globalTransforms[nextAnimKeyFrame][j].rot,
+                    nextAnimation->globalTransforms[nextAnimNextKeyFrame][j].rot, t
+                );
+
+                interpolatedBone.pos = pos1.Lerp(pos1, pos2, blendFactor);
+                interpolatedBone.rot = rot1.Slerp(rot1, rot2, blendFactor);
+            }
+            else
+            {
+                interpolatedBone.pos = currentAnimation->globalTransforms[currentKeyFrame][j].pos.Lerp(
+                    currentAnimation->globalTransforms[currentKeyFrame][j].pos,
+                    currentAnimation->globalTransforms[nextKeyFrame][j].pos, t
+                );
+
+                interpolatedBone.rot = currentAnimation->globalTransforms[currentKeyFrame][j].rot.Slerp(
+                    currentAnimation->globalTransforms[currentKeyFrame][j].rot,
+                    currentAnimation->globalTransforms[nextKeyFrame][j].rot, t
+                );
+            }
+
+            interpolatedBone.mat.TRS(interpolatedBone.pos, interpolatedBone.rot);
+            interpolatedBone.mat = interpolatedBone.mat * currentAnimation->bindPoseTransforms[j].mat.InvertMatrix();
+            interpolatedBone.mat.TransposeMatrix();
+
+            std::memcpy(&skinningData[j * 16], interpolatedBone.mat.data, 16 * sizeof(float));
+        }
+
+        if (nextAnimation)
+        {
+            blendTimeElapsed += frameTime;
+            blendFactor = blendTimeElapsed / blendDuration;
+
+            if (blendFactor >= 1.0f)
+            {
+                currentAnimation = nextAnimation;
+                nextAnimation = nullptr;
+                blendFactor = 0.0f;
+                blendTimeElapsed = 0.0f;
+            }
+        }
+
+        SetSkinningPose(skinningData.data(), 64);
+    }
+}; 
