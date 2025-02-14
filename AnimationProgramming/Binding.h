@@ -1,83 +1,36 @@
 #pragma once
 #include <windows.h>
-#include "Animation.h"
+#include "Blend.h"
 
 class Binding
 {
-public :
-	Binding() {}
-	~Binding() {}
+private:
+    bool canPause = true;
+    bool canRewind = true;
+    bool canBlend = true;
 
-	bool canPause = true;
-	bool blending = false;
-	bool walk = true;
-	bool running = false;
-	bool canBlending = true;
-	float timer = 0.0f;
-	float blendSpeed = 30.0f;
-	float speed = 5;
-	bool canRewind = true;
+    bool blending = false;
+    bool walking = true;
+    bool running = false;
 
-	void Rewind(Blend* blend)
-	{
-		if (GetKeyState(VK_RIGHT) & 0x8000 && canRewind)
-		{
-			blend->ChangeBlendDirection();
-			canRewind = false;
-		}
+    float blendSpeed = 30.0f;
+    float speed = 5.0f;
 
-		if (GetAsyncKeyState(VK_RIGHT) & 0x0001)
-			canRewind = true;
-	}
+public:
+    Binding() = default;
+    ~Binding() = default;
 
-	void Pause(Blend* blend)
-	{
-		if (GetKeyState(VK_SPACE) & 0x8000 && canPause)
-		{
-			blend->ChangeAnimState();
-			canPause = false;
-		}
+    void HandleInput(float frameTime, Blend* blend);
+    void UpdateBlendFactor(float& blendFactor, float frameTime);
 
-		if (GetAsyncKeyState(VK_SPACE) & 0x0001)
-			canPause = true;
-	}
+    bool IsRunning() const { return running; }
+    bool IsWalking() const { return walking; }
+    bool IsBlending() const { return blending; }
+    float GetBlendSpeed() const { return blendSpeed; }
 
-	void Blend()
-	{
-		if (GetKeyState(VK_LEFT) & 0x8000 && canBlending)
-		{
-			canBlending = false;
-			blending = true;
-
-			if (walk)
-			{
-				walk = false;
-				running = true;
-			}
-			else
-			{
-				running = false;
-				walk = true;
-			}
-
-			timer = 0.0f;
-		}
-
-		if (GetKeyState(VK_LEFT) & 0x0001)
-			canBlending = true;
-	}
-
-	void ChangeSpeed(float frameTime)
-	{
-		if (GetKeyState(VK_DOWN) & 0x8000)
-		{
-			if (blendSpeed > 1.0f)
-				blendSpeed -= 1.0f * speed * frameTime;
-		}
-
-		if (GetKeyState(VK_UP) & 0x8000)
-		{
-			blendSpeed += 1.0f * speed * frameTime;
-		}
-	}
+private:
+    void ProcessRewind(Blend* blend);
+    void ProcessPause(Blend* blend);
+    void ProcessBlend();
+    void AdjustSpeed(float frameTime);
 };

@@ -7,6 +7,8 @@
 #include <iostream>
 #include "Simulation.h"
 #include "math.h"
+
+#include "Blend.h"
 #include "Binding.h"
 
 class CSimulation : public ISimulation
@@ -37,34 +39,10 @@ class CSimulation : public ISimulation
 
     virtual void Update(float frameTime) override
     {  
-        binding->Pause(blend);
-        binding->Rewind(blend);
-        binding->ChangeSpeed(frameTime);
-        binding->Blend();
+        binding->HandleInput(frameTime, blend);
+        binding->UpdateBlendFactor(blendFactor, frameTime);
 
-        if (blend)
-        {
-            if (binding->running)
-            {
-                blendFactor += frameTime;
-                if (blendFactor > 1.0f)
-                {
-                    binding->blending = false;
-                    blendFactor = 1.0f;
-                }
-            }
-            else if (binding->walk)
-            {
-                blendFactor -= frameTime;
-                if (blendFactor < 0.0f)
-                {
-                    binding->blending = false;
-                    blendFactor = 0.0f;
-                }
-            }
-        }
-
-        blend->PlayAnimation(frameTime, binding->blendSpeed, blendFactor, walkAnimation, runAnimation);
+        blend->PlayAnimation(frameTime, binding->GetBlendSpeed(), blendFactor, walkAnimation, runAnimation); 
     }
 };
 

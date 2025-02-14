@@ -157,6 +157,7 @@
   <ItemGroup>
     <ClInclude Include="Animation.h" />
     <ClInclude Include="Binding.h" />
+    <ClInclude Include="Blend.h" />
     <ClInclude Include="Engine.h" />
     <ClInclude Include="math.h" />
     <ClInclude Include="Simulation.h" />
@@ -164,6 +165,9 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Animation.cpp" />
+    <ClCompile Include="Binding.cpp" />
+    <ClCompile Include="Blend.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="matrice.cpp" />
     <ClCompile Include="quaternion.cpp" />
