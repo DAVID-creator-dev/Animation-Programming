@@ -8,6 +8,7 @@
 #include "Simulation.h"
 #include "math.h"
 #include "Animation.h"
+#include <windows.h>
 
 class CSimulation : public ISimulation
 {
@@ -21,6 +22,7 @@ class CSimulation : public ISimulation
     float timer = 0.0f;
     float timerLimit = 2.4f;
     bool running = false;
+    float blendSpeed = 30.0f;
 
     virtual void Init() override
     {
@@ -57,7 +59,27 @@ class CSimulation : public ISimulation
             }
         }
         
-        blend->PlayAnimation(frameTime, 30.f);
+        blend->PlayAnimation(frameTime, blendSpeed);
+
+        if (GetKeyState(VK_SPACE) & 0x8000)
+        {
+            blend->ChangeAnimState();
+            Sleep(100);
+        }
+
+        if (GetKeyState(VK_DOWN) & 0x8000)
+        {
+            if (blendSpeed > 1.0f)
+                blendSpeed -= 1.0f;
+
+            Sleep(50);
+        }
+
+        if (GetKeyState(VK_UP) & 0x8000)
+        {
+            blendSpeed += 1.0f;
+            Sleep(50);
+        }
     }
 };
 
