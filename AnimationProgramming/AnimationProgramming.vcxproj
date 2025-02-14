@@ -156,6 +156,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Animation.h" />
+    <ClInclude Include="Binding.h" />
     <ClInclude Include="Engine.h" />
     <ClInclude Include="math.h" />
     <ClInclude Include="Simulation.h" />

@@ -48,7 +48,6 @@ public:
     int currentKeyFrame = 0;
     const char* filename;
     int animationDuration;
-    
     std::vector<std::vector<BoneTransform>> animeSeq;
     std::vector<std::vector<BoneTransform>> globalTransforms;
     std::vector<BoneTransform> bindPoseTransforms;
@@ -109,10 +108,16 @@ public:
     int nextKeyFrame = 0;
     float t = 0.0f;
     Vec3 interpolatedParentPos = Vec3(0, 0, 0);
+    bool isRewind = false;
 
     Blend()
     {
         skinningData = std::vector<float>(BONECOUNT * 16);
+    }
+
+    void ChangeBlendDirection()
+    {
+        isRewind = !isRewind;
     }
 
     void ChangeAnimState()
@@ -136,9 +141,18 @@ public:
             if (currentTime >= animationDuration)
                 currentTime = 0.0f;
 
-            currentKeyFrame = static_cast<int>(currentTime);
-            nextKeyFrame = (currentKeyFrame + 1) % keyFrame;
-            t = currentTime - currentKeyFrame;
+            if (isRewind)
+            {
+                currentKeyFrame = keyFrame - 1 - static_cast<int>(currentTime);
+                nextKeyFrame = (currentKeyFrame - 1) % keyFrame;
+                t = currentTime - currentKeyFrame - 1 - keyFrame;
+            }
+            else
+            {
+                currentKeyFrame =static_cast<int>(currentTime);
+                nextKeyFrame = (currentKeyFrame + 1) % keyFrame;
+                t = currentTime - currentKeyFrame;
+            }
         }
         
 
@@ -182,7 +196,6 @@ public:
             interpolatedBone.mat.TransposeMatrix();
 
             std::memcpy(&skinningData[j * 16], interpolatedBone.mat.data, 16 * sizeof(float));
-
 
             //Parent
             int parentIndex = GetSkeletonBoneParentIndex(j);
