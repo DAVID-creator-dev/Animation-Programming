@@ -1,28 +1,39 @@
-# **Projet d'Animation - Marche et Course**
+# Animation Project in C++
 
-Ce projet permet d'observer les animations de marche et de course sur un modèle neutre (UE) et son squelette, tout en offrant plusieurs outils interactifs pour une meilleure visualisation.
+This project allows you to visualize and interact with walking and running animations on a neutral UE model and its skeleton, using several real-time tools.
 
-## **Fonctionnalités**
+<p align="center">
+  <img src="https://raw.githubusercontent.com/DAVID-creator-dev/Animation-Programming/refs/heads/master/docs/images/demo.gif" alt="Demo">
+</p>
 
-###  **Contrôle de la Caméra**
-Utilisez les touches `W`, `A`, `S`, `D` ainsi que la souris pour déplacer la caméra et observer l'animation sous tous les angles.
+---
 
-###  **Ajustement de la Vitesse**
-Modifiez la vitesse de l'animation grâce aux flèches directionnelles :
-- `Flèche Haut` : Augmente la vitesse.
-- `Flèche Bas` : Diminue la vitesse.
+## Controls
 
-###  **Blending entre plusieurs animations**
-La `Flèche Gauche` permet de basculer en douceur entre l'animation de marche et celle de course.
+| **Key**                     | **Action**                                                |
+|-----------------------------|------------------------------------------------------------|
+| `W` / `A` / `S` / `D`       | Move the camera (forward, left, backward, right)          |
+| **Mouse (movement)**        | Rotate the camera to view the animation from any angle    |
+| `↑` (Up Arrow)              | Increase animation speed                                  |
+| `↓` (Down Arrow)            | Decrease animation speed                                  |
+| `←` (Left Arrow)            | Switch between walk and run animations with smooth blending |
+| `→` (Right Arrow)           | Play the animation in reverse (rewind)                    |
 
-###  **Rembobinage des Animations**
-La `Flèche Droite` permet d'inverser la lecture de l'animation pour la jouer en sens inverse.
+---
 
-## **Tableau des commandes**
+## Main Features
 
-| **Action**                          | **Touche(s)**                  | **Description**                                                  |
-|-------------------------------------|--------------------------------|------------------------------------------------------------------|
-| **Déplacement de la caméra**        | `W`, `A`, `S`, `D` + Souris    | Contrôle la caméra pour observer l'animation.                    |
-| **Ajuster la vitesse de l'animation** | `Flèche Haut` / `Flèche Bas`  | Augmente ou diminue la vitesse de l'animation.                   |
-| **Transition entre marche et course** | `Flèche Gauche`               | Changement entre l'animation de marche et celle de course. |
-| **Lecture en sens inverse**         | `Flèche Droite`               | Permet de rembobiner et de jouer l'animation à l'envers.         |
+- **Adjustable playback speed**: examine animation sequences in detail.  
+- **Smooth blending** between walking and running animations.  
+- **Reverse playback** for full animation control.
+
+---
+
+## Purpose
+
+This project demonstrates skeletal animation handling and visualization in C++, including:
+- animation playback and interpolation,
+- blending between multiple animation states,
+- real-time camera and playback control.
+
+© 2024 – C++ Animation Project
